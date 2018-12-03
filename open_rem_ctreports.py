@@ -8,6 +8,13 @@ from datetime import datetime
 # List of protocols to exclude
 exclude = ['Topogram', 'PreMonitoring', 'Monitoring', 'SCOUT', 'Test Bolus', 'monitoring', 'Localizer']
 
+begindate = input("please enter begin date as yyyy-mm-dd: ")
+enddate = input("please enter end date as yyyy-mm-dd: ")
+#begindate = datetime.strptime(begindate, '%Y-%m-%d')
+#enddate = datetime.strptime(enddate, '%Y-%m-%d')
+#print(type(begindate))
+#print(type(enddate))
+
 # path for local database
 fileDb = py.path.local(r"C:\Users\clahn\Desktop\openrem.db")
 
@@ -21,30 +28,24 @@ py.path.local(r'W:\SHARE8 Physics\Software\python\data\openrem\openrem081.db').c
 # Connect to the database. Need .strpath to work.
 db = sqlite3.connect(fileDb.strpath)
 
-# selects data from database.  LIMIT will  limit results to specified number.
-queries = ("""SELECT acquisition_protocol as protocol, mean_ctdivol as ctdi, irradiation_event_uid as uid,
-              start_of_xray_irradiation as day FROM remapp_ctirradiationeventdata, remapp_ctradiationdose
-              WHERE remapp_ctirradiationeventdata.ct_radiation_dose_id = remapp_ctradiationdose.id""")
 
-# pandas dataframe
-# pd.set_option('display.max_columns', 5)
-df = pd.read_sql_query(queries, db)
+# query to be run.  ? are placeholder for user defined date in varialbles beginate and enddate.
+queries = ("""SELECT acquisition_protocol as protocol, mean_ctdivol as ctdi, irradiation_event_uid as uid,
+              remapp_ctradiationdose.start_of_xray_irradiation as day
+              FROM remapp_ctirradiationeventdata, remapp_ctradiationdose
+              WHERE remapp_ctirradiationeventdata.ct_radiation_dose_id = remapp_ctradiationdose.id
+              AND Date(start_of_xray_irradiation) >= ? AND Date(start_of_xray_irradiation) <= ? """)
+
+
+df = pd.read_sql(queries, db, params=(begindate, enddate))
+# print(df.head(40))
 df['protocol'] = df['protocol'].astype(str)
 # trying to set dat column to datetime format
 df['day'] = pd.to_datetime(df['day'], format="%Y/%m/%d")
-
-
-begindate = input("please enter begin date as yyyy-mm-dd: ")
-enddate = input("please enter end date as yyyy-mm-dd: ")
-begindate = datetime.strptime(begindate, '%Y-%m-%d')
-enddate = datetime.strptime(enddate, '%Y-%m-%d')
-# create mask of just date specified by user
-mask = (df['day'] > begindate) & (df['day'] <= enddate)
-df = df.loc[mask]
 # mask dataframe to exclude protocols in list exclude
 df = df[~df['protocol'].isin(exclude)]
 
-#print(df.head(40))
+
 
 
 
