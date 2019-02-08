@@ -98,13 +98,13 @@ queries = ("""SELECT remapp_ctradiationdose.start_of_xray_irradiation as day, ac
               remapp_generalstudymoduleattr.study_description as study,
               remapp_generalequipmentmoduleattr.institution_name as site,
               remapp_generalequipmentmoduleattr.station_name as station,
-              remapp_patientstudymoduleattr.patient_age_decimal as ptage
+              remapp_patientstudymoduleattr.patient_age as ptage
               FROM remapp_ctradiationdose, remapp_ctirradiationeventdata, remapp_generalstudymoduleattr,
               remapp_generalequipmentmoduleattr, remapp_patientstudymoduleattr
              WHERE remapp_ctradiationdose.id = remapp_ctirradiationeventdata.ct_radiation_dose_id
               AND remapp_ctradiationdose.general_study_module_attributes_id = remapp_generalstudymoduleattr.id
               AND remapp_generalequipmentmoduleattr.id = remapp_ctradiationdose.general_study_module_attributes_id
-              AND remapp_patientstudymoduleattr.id = remapp_ctradiationdose.general_study_module_attributes_id
+              AND remapp_patientstudymoduleattr.general_study_module_attributes_id = remapp_ctradiationdose.general_study_module_attributes_id
              AND Date(start_of_xray_irradiation) BETWEEN ? AND ? AND mean_ctdivol != ''""")
 
 
