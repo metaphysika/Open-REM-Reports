@@ -3,11 +3,12 @@ import sqlite3
 import pandas as pd
 import openpyxl
 import py
-from datetime import datetime
+# from datetime import datetime
 import atexit
 from time import time, strftime, localtime
 from datetime import timedelta
 import datetime
+import os, sys
 
 # This will help display run time for script
 def secondsToStr(elapsed=None):
@@ -34,6 +35,8 @@ def endlog():
 start = time()
 atexit.register(endlog)
 log("Start Program")
+
+
 
 
 # List of protocols to exclude
@@ -95,11 +98,13 @@ db = sqlite3.connect(fileDb.strpath)
 queries = ("""SELECT remapp_ctradiationdose.start_of_xray_irradiation as day, acquisition_protocol as protocol,
                mean_ctdivol as ctdi, remapp_ctirradiationeventdata.dlp as dlp,
                remapp_generalstudymoduleattr.accession_number as acc,
-              remapp_generalstudymoduleattr.study_description as study,
-              remapp_generalequipmentmoduleattr.institution_name as site,
-              remapp_generalequipmentmoduleattr.station_name as station,
-              remapp_patientstudymoduleattr.patient_age as ptage
-              FROM remapp_ctradiationdose, remapp_ctirradiationeventdata, remapp_generalstudymoduleattr,
+              remapp_generalstudymoduleattr.study_description as study, 
+              remapp_generalequipmentmoduleattr.institution_name as site, 
+              remapp_generalequipmentmoduleattr.station_name as station, 
+              remapp_patientstudymoduleattr.patient_age_decimal as ptage,
+              remapp_generalequipmentmoduleattr.manufacturer as brand,
+              remapp_generalequipmentmoduleattr.manufacturer_model_name as model
+              FROM remapp_ctradiationdose, remapp_ctirradiationeventdata, remapp_generalstudymoduleattr, 
               remapp_generalequipmentmoduleattr, remapp_patientstudymoduleattr
              WHERE remapp_ctradiationdose.id = remapp_ctirradiationeventdata.ct_radiation_dose_id
               AND remapp_ctradiationdose.general_study_module_attributes_id = remapp_generalstudymoduleattr.id
@@ -118,26 +123,31 @@ df = df[(~df['protocol'].isin(exclude)) & (~df['study'].isin(exclude)) & (~df['a
 
 
 def create_report():
-    filepath = (r"W:\SHARE8 Physics\Software\python\scripts\clahn\Open REM Reports\Open REM Reports.xlsx")
+    # filepath = (r"W:\SHARE8 Physics\Software\python\scripts\clahn\Open REM Reports\Open REM Reports2.xlsx")
+    #  snippet to become date in file name below.
+    todaydate2 = strftime("%Y-%m-%d %H.%M.%S")
+    # # naming of daily report for archival. The "/" was necessary to set the file path along with the todaydate function.
+    reportname = (r"W:\SHARE8 Physics\Software\python\scripts\clahn\Open REM Reports\Open REM Reports" +
+                        todaydate2 + ".xlsx")
     wb = openpyxl.Workbook()
     sheet = wb.active
     #sheet = wb['Sheet1']
     # header row titles
     header = ["Protocol", "ctdi", "dlp", "Study Description", "Patient Age", "Accession #", "Study Date",
-              "Site", "Station name"]
+              "Site", "Station name", "Brand", "Model"]
     sheet.append(header)
     for idx, row in df.iterrows():
         # list for adding data to spreadsheet for tracking notifications.
         nt = []
         protocol = str(row.at["protocol"])
         nt.append(protocol)
-        ctdi = str(row.at['ctdi'])
+        ctdi = (row.at['ctdi'])
         nt.append(ctdi)
-        ctdi = str(row.at['dlp'])
-        nt.append(ctdi)
+        dlp = (row.at['dlp'])
+        nt.append(dlp)
         study = str(row.at['study'])
         nt.append(study)
-        ptage = str(row.at['ptage'])
+        ptage = (row.at['ptage'])
         nt.append(ptage)
         acc = str(row.at['acc'])
         nt.append(acc)
@@ -147,10 +157,14 @@ def create_report():
         nt.append(site)
         station = str(row.at["station"])
         nt.append(station)
+        brand = str(row.at["brand"])
+        nt.append(brand)
+        model = str(row.at["model"])
+        nt.append(model)
         #append full nt list to workbook
         sheet.append(nt)
     # this will overwrite the old file with same name.
-    wb.save(filepath)
+    wb.save(reportname)
     wb.close()
 
 create_report()
